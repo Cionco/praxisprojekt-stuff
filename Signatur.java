@@ -30,41 +30,43 @@ public class Signatur {
 		KeyPairGenerator keyPairGen = null;
 		Signature sign = null;
 		byte[] signature = null;
+		byte[] bytes = null;
 		try {
 			keyPairGen = KeyPairGenerator.getInstance("DSA");
 			sign = Signature.getInstance("SHA256withDSA");
 		} catch (NoSuchAlgorithmException e) {}
 		keyPairGen.initialize(2048);
 		KeyPair kp = keyPairGen.generateKeyPair();
-		PrivateKey privateKey = kp.getPrivate();//getPrivateKey(htb(pri));//kp.getPrivate();
-		PublicKey publicKey = kp.getPublic();//getPublicKey(htb(pub));//kp.getPublic();
+		PrivateKey privateKey = kp.getPrivate();//getPrivateKey(htb(pri));
+		PublicKey publicKey = kp.getPublic();//getPublicKey(htb(pub));
 		try {
 			sign.initSign(privateKey);
-		} catch (InvalidKeyException e) {
-			e.printStackTrace();
-		}
-		//Beliebigen Pfad zu einer Bilddatei einsetzen
-		byte[] bytes = extractBytes("/Users/nicolaskepper/Downloads/pen-15.png");
-		try {
+			//Beliebigen Pfad zu einer Bilddatei einsetzen
+			bytes = extractBytes("/Users/nicolaskepper/Downloads/pen-15.png");
 			sign.update(bytes);
 			signature = sign.sign();
-		} catch (SignatureException e) {
+		} catch (SignatureException | InvalidKeyException e) {
 			e.printStackTrace();
 		}
 		
-		System.out.print("Private Key: "); for(byte b : privateKey.toString().getBytes()) System.out.printf("%02x", b);
-		System.out.print("\nPublic Key: "); for(byte b : publicKey.toString().getBytes()) System.out.printf("%02x", b);
-		System.out.print("\nSignature: "); for(byte b : signature) System.out.printf("%02x", b);
+		printBytesWMessage("Private Key: ", privateKey.toString().getBytes());
+		printBytesWMessage("Public Key: ", publicKey.toString().getBytes());
+		printBytesWMessage("Signature: ", signature);
 		
 		try {
 			sign.initVerify(publicKey);
 			sign.update(bytes);
-			System.out.println();
 			System.out.println("Verified: " + sign.verify(signature));
 		} catch (SignatureException | InvalidKeyException e) {
 			e.printStackTrace();
 		}
 		
+	}
+	
+	private static void printBytesWMessage(String msg, byte[] array) {
+		System.out.print(msg);
+		for(byte b : array) System.out.printf("%02x", b);
+		System.out.println();
 	}
 
 	/**
