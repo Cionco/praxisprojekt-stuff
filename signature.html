@@ -1,0 +1,32 @@
+<html>
+    <head>
+        <title>Signature - Test</title>
+        <script src="https://kjur.github.io/jsrsasign/jsrsasign-all-min.js"></script>
+        <script>
+            var keypair = null;
+            window.onload = function() {
+                keypair = KEYUTIL.generateKeypair("RSA", 2048);
+                document.getElementById("pub").value = KEYUTIL.getPEM(keypair.pubKeyObj);
+                document.getElementById("priv").value = KEYUTIL.getPEM(keypair.prvKeyObj, "PKCS8PRV");
+                
+                var pem = KEYUTIL.getPEM(privateKeyObj, "PKCS8PRV");console.log(i++);console.log(pem);
+            }
+            
+            function signdata() {
+                sig = new KJUR.crypto.Signature({"alg": "SHA256withRSA"});
+                sig.init(keypair.prvKeyObj);
+                sig.updateString(document.getElementById("data").value);
+                document.getElementById("sign").value = sig.sign();
+            }
+        </script>
+    </head>
+    <body>
+        <p><label for="priv">Private Key</label><input type=text name="privatekey" id="priv" disabled style="width: 80%;"></p>
+        <p><label for="pub">Public Key</label><input type=text name="publickey" id="pub" disabled style="width: 80%;"></p>
+        <p><label for="data">Data</label><input type=text name="data" id="data" onchange="signdata();" 
+   onkeypress = "this.onchange();"
+   onpaste    = "this.onchange();"
+   oninput    = "this.onchange();"></p>
+        <p><label for="sign">Signature</label><input type=text name="signature" id="sign" disabled style="width: 80%;"></p>
+    </body>
+</html>
