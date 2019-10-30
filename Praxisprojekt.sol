@@ -109,7 +109,7 @@ contract Praxisprojekt {
   ///@param link The link to where the file is actually stored
   ///@param signature The Object's/Document's signature
   ///@return true, if successfully created; false if there's already an Object with the same description in this user's array
-  function createObject(string memory description, string memory link, string signature) public returns(bool) {
+  function createObject(string memory description, string memory link, bytes32 signature) public returns(bool) {
     if(streql(getObjectLink(description), "")) {
       objects[msg.sender].push(Object(objectCount++, description, signature, now, link));
       return true;
@@ -169,7 +169,7 @@ contract Praxisprojekt {
 
   //Returns the index of the object with this description, -1 if none exists
   ///@notice Finds and returns the index of the object in the list of objects of the right user with the specified description
-  ///@param desciprion description of the object
+  ///@param description description of the object
   ///@return index of the object or -1 if description can't be found
   function findObject(string memory description) private view returns(int) {
       uint objects_length = objects[msg.sender].length;
