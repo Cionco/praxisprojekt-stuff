@@ -37,6 +37,8 @@ contract Praxisprojekt {
   mapping(address => Object[]) objects;
   mapping(address => User) users;
 
+  mapping(string => address) email_to_user;
+
   ///@notice Maps a new Institution Object on the sender's address
   ///@param name Institution's name
   ///@param email Institution's login email
@@ -63,6 +65,7 @@ contract Praxisprojekt {
   function createUser(string memory firstName, string memory lastName, string memory email, string memory password, string memory caCertificate) public returns(bool){
     if(!(users[msg.sender].id > 0)) {
         users[msg.sender] = User(userCount++, firstName, lastName, email, sha256(abi.encode(password)), caCertificate);
+        email_to_user[email] = msg.sender;
         return true;
     }
     return false;
@@ -99,6 +102,13 @@ contract Praxisprojekt {
   ///@return the Certificate string of the User mapped to this address
   function getUserCaCertificate() public view returns (string memory) {
     return users[msg.sender].caCertificate;
+  }
+
+  ///@notice Without specifying from whom the request is sent, find the address to a user's email
+  ///@param email Email address to be searched for
+  ///@return address corresponding to the email or 0x0000000000000000000000000000000000000000 if the email doesnt exist
+  function getAddressForEmail(string memory email) public view returns (address) {
+    return email_to_user[email];
   }
 
 // **********************************************************************************************************
