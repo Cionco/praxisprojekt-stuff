@@ -166,67 +166,23 @@ web3.eth.defaultAccount = web3.eth.accounts[0];
 //const accounts = await web3.eth.getAccounts();
 //console.log('Sending from account: ' + accounts[0]);
 
-/*
-  var Accounts = require('web3-eth-accounts');
-  var accounts = new Accounts('ws://localhost:8546');
 
-  //Create an account with private and public key
-  web3.eth.accounts.create([entropy]);
-
-  //Sign transaction with private key
-  web3.eth.accounts.signTransaction(tx, privateKey [, callback]);
-
-  //Hash a message to be passed to another function, e.g. one that recovers the ethereum address that was used to sign a transaction
-  web3.eth.accounts.hashMessage(message);
-
-  //encript private key
-  web3.eth.accounts.encrypt(privateKey, password);
-
-  //create wallet, create accounts in wallt etc...
-  web3.eth.accounts.wallet.create(numberOfAccounts [, entropy]);
-  web3.eth.accounts.wallet.add(account);
-  web3.eth.accounts.wallet.clear();
-  web3.eth.accounts.wallet.encrypt(password);
-
-  //store encrypted wallet as a string in local storage
-  web3.eth.accounts.wallet.save(password [, keyName]);
-
-  //Loads wallet from local storage and decryptes it
-  web3.eth.accounts.wallet.load(password [, keyName]);
-
-  //Create account from private key
-  this.wallet = web3.eth.accounts.privateKeyToAccount(privateKey);
-  console.debug("wallet: ",this.wallet);
-  web3.eth.accounts.encrypt(privateKey, password)
-  .catch(err => console.error(err));
-  web3.eth.accounts.wallet.save(password [, keyName]);
-  web3.eth.accounts.wallet.load(password [, keyName]);
-
-*/
-
-export default class FetchRandomSomething extends React.Component {
+export default class ReactBCInterface extends React.Component {
 
   constructor(props) {
       super(props);
       this.state = {
-        loading: true,
-        firstName: '',
-        lastName: '',
         usertype: null,
-        institutionName: '',
         email: '',
-        password: '',
-        passportNo: '',
-        document: null,
-        document_id: null,
-        document_name: null,
-        signature: null,
-        certificat: null
+        ethereumAddress: null,
+        json: null
       };
   }
 
+// **********************************************************************************************************
+// Login & Register
 
-  async register(userType, firstName, lastName, email, password) {
+  async register(userType, firstName, lastName, email, password, caCertificate) {
 
     //caKey mit dem das Zertifikat verifiziert werden kann, dann nur PublicKey weitergeben und speichern
 
@@ -243,28 +199,40 @@ export default class FetchRandomSomething extends React.Component {
     .then(console.log);
   }
 
-//Should probably be a hash that is stored to the blockchain. Actual file to be stored on server
-  async uploadDocument(document_name, documentContent) {
-    //var documentContent = fetch(this.props.ref);
+  async verifyUserCertificate(certificate) {
 
-    const uploadResult = await Praxisprojekt.methods.createObject(document_name, documentContent).send();
+    //var certificate = '12345';
+    function verifycrt(certificate) {
+      var SSH = require('simple-ssh');
+      var fs = require('fs');
+      var ssh = new SSH({
+          host: '81.169.131.100',
+          user: 'root',
+          pass: 'B4r26Xy2'
+      });
 
-    if (uploadResult) {
-      //render message "successful upload of document"
-    } else {
-      //Show error, then return to upload page
+      //Does it need to have unique file names?!
+      ssh.exec('touch verifycrt.txt', {
+          out: function(stdout) {console.log(stdout);},
+          err: function (stderr) { console.log(stderr); },
+          exit: function (code) { console.log(code); }
+      }).start();
+
+      ssh.exec('openssl verify -CAfile ca2.crt.pem ~/usercrts/' + certificate + '.crt.pem > verifycrt.txt', {
+          out: function(stdout) {console.log(stdout);},
+          err: function (stderr) { console.log(stderr); },
+          exit: function (code) { console.log(code); }
+      }).start();
+
+      ssh.end();
+      /*
+      var verification = fs.readFileSync('http://81.169.131.100:8080/verifycrt.txt');
+      var v = verification.toString('ascii');
+
+      if(v == '/root/usercrts/' + passnr + '.crt.pem: OK') { console.log("verifies"); } else { console.log(err); }
+      */
     }
-
-    web3.eth.isSyncing()
-    .then(console.log);
-
-    //AUSBAUSTUFE 2: HASHES DES DOKUMENTS & SPEICHERS DIESES IN DER BC ANSTELLE DES EIGENTLICHEN DOKUMENTS; FRAGE => WO WIRD ES GEHASHED, BEVOR AUF DEM SERVER GESPEICHERT
-    /*
-      var ourObject =
-      var crypto = require('crypto')
-      var sha256 = crypto.createHash('sha256').update('We are so smat').digest('hex')
-      console.log(sha256)
-    */
+    verifycrt(certificate);
   }
 
   async login(email, password) {
@@ -273,17 +241,37 @@ export default class FetchRandomSomething extends React.Component {
 
     const loginResult = await Praxisprojekt.methods.authenticate(email, password, {from: userAddress}).send();
     await this.setState({
-      email: email
+      email: email,
+      ethereumAddress: userAddress
     });
 
     web3.eth.isSyncing()
     .then(console.log);
+  }
 
+  // **********************************************************************************************************
+  // Handling Documents
 
+  async uploadDocument(document_name, documentPath, signature) {
+    //var documentContent = fetch(this.props.ref);
+
+    const uploadResult = await Praxisprojekt.methods.createObject(document_name, documentPath, signature).send();
+
+    if (uploadResult) {} else {}
+
+    web3.eth.isSyncing()
+    .then(console.log);
+
+    //upload document to server
+    //var document_name = document.getElementsById().value;
+    //uploadDocument(document_name, b, c)
   }
 
 
   async requestDocument(){
+
+    //return Praxisprojekt.methods.getObject(document_name).call();
+
     //getSignature from blockchain
     //get Hash from getSignature
     //Pull Document from SERVER
@@ -291,7 +279,39 @@ export default class FetchRandomSomething extends React.Component {
     //give document to frontend
   }
 
-  //return firstName on the basis of what? No reference. Need getFirstName by looking up userName from email or so
+
+  getDocumentsData() {
+
+    const userEthereumAddress = this.state.ethereumAddress;
+    const noOfDocuments = Praxisprojekt.methods.getObjectCount({from: userEthereumAddress}).call();
+
+    var objectTableResult = {
+      documents: []
+    };
+
+    var descriptionAndLink;
+    var inVerfication;
+    var verified;
+
+    for (i = 0, i < noOfDocuments, i++) {
+
+      descriptionAndLink  = Praxisprojekt.methods.getObjectById(i, {from: userEthereumAddress}).call()
+      inVerification      = Praxisprojekt.methods.getObjectVerificationStatus(i, {from: userEthereumAddress}).call()
+      verified            = Praxisprojekt.methods.getIsObjectVerified(i, {from: userEthereumAddress}).call()
+
+      objectTableResult.documents.push({id: i, name: descriptionAndLink[0], verified: verified, inVerification: inVerification});
+    };
+
+    var json = JSON.stringify(objectTableResult);
+
+    this.setState({
+      json: json
+    });
+  }
+
+  // **********************************************************************************************************
+  // Other Requests from Smart Contract
+
   getFirstName() {
     return Praxisprojekt.methods.getUserFirstName().call();
   }
@@ -308,15 +328,6 @@ export default class FetchRandomSomething extends React.Component {
     return Praxisprojekt.methods.getUserCaCertificate().call();
   }
 
-  fetchObject() {
-    //Probably should be fetchObjectHash, then create Hash from Object that is pulled from the server, then compare both Hashes for security
-    return Praxisprojekt.methods.getObject(document_name).call();
-  }
-
-  getObjectCount() {
-    return Praxisprojekt.methods.getObjectCount().call();
-  }
-
   getDocumentVerificationStatus() {
     //Check whether document is still being verified or is already verified
   }
@@ -327,10 +338,4 @@ export default class FetchRandomSomething extends React.Component {
 
   deleteDocumentHash() {
     //Delete the document on the server and the Hash from the Blockchain
-  }
-
-  getDocumentsData() {
-    //Array of users that stores id, name and verifcation status of each
-    const userDocuments = []
-    const objectName = Praxisprojekt.methods.getObject(document_name).call();
   }
