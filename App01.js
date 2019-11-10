@@ -262,18 +262,20 @@ export default class ReactBCInterface extends React.Component {
     web3.eth.isSyncing()
     .then(console.log);
 
-    //upload document to server
-    //var document_name = document.getElementsById().value;
+    //Document Name: var document_name = document.getElementsById().value;
     //uploadDocument(document_name, b, c)
+    //Code for upload available. Still requires signature, connection to server and document path
   }
 
 
   async requestDocument(){
 
+    //actually downloading/requesting one document
+
     //return Praxisprojekt.methods.getObject(document_name).call();
 
     //getSignature from blockchain
-    //get Hash from getSignature
+    //get Hash from getSignature OR REQUEST PUBLIC KEY FROM SERVER AND DECRYPT signature TO GET HASH
     //Pull Document from SERVER
     //Hash document and check whether hashes are equal
     //give document to frontend
@@ -281,6 +283,8 @@ export default class ReactBCInterface extends React.Component {
 
 
   getDocumentsData() {
+
+    //Get all documents from one user and display it in a table
 
     const userEthereumAddress = this.state.ethereumAddress;
     const noOfDocuments = Praxisprojekt.methods.getObjectCount({from: userEthereumAddress}).call();
@@ -318,10 +322,6 @@ export default class ReactBCInterface extends React.Component {
 
   getLastName() {
     return Praxisprojekt.methods.getUserLastName().call();
-  }
-
-  getObjectById() {
-    return Praxisprojekt.methods.getObjectById(document_id).call();
   }
 
   getCaCertificate() {
