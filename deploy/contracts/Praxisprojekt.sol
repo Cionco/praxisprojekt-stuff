@@ -1,4 +1,4 @@
-pragma solidity ^0.5.8;
+pragma solidity ^0.4.24;
 
 ///@title Praxisprojekt 2019 Smart contract
 ///@author Jan Ludwig & Nicolas Kepper
@@ -12,14 +12,14 @@ contract Praxisprojekt {
     uint id;
     string name;
     string email;
-    bytes32 password;
+    string password;
     string caCertificate;
   }
 
   struct Object {
     uint id;
     string description;
-    bytes32 signature;
+    string signature;
     uint256 timestamp;
     string link; //Where the object is actually stored. either full url or just path on the file system, probably depending on the used protocol
   }
@@ -29,7 +29,7 @@ contract Praxisprojekt {
     string firstName;
     string lastName;
     string email;
-    bytes32 password;
+    string password;
     string caCertificate;
   }
 
@@ -47,7 +47,7 @@ contract Praxisprojekt {
   ///@dev not really in use yet, will be important for later steps
   function createInstitution(string memory name, string memory email, string memory password) public returns(bool){
     if(!(institutions[msg.sender].id > 0)) {
-        institutions[msg.sender] = Institution(institutionCount++, name, email, sha256(abi.encode(password)), "");
+        institutions[msg.sender] = Institution(institutionCount++, name, email, password, "");
         return true;
     }
     return false;
@@ -64,7 +64,7 @@ contract Praxisprojekt {
   ///@return true, if successfully created; false if there's already a User mapped on the sender's address
   function createUser(string memory firstName, string memory lastName, string memory email, string memory password, string memory caCertificate) public returns(bool){
     if(!(users[msg.sender].id > 0)) {
-        users[msg.sender] = User(userCount++, firstName, lastName, email, sha256(abi.encode(password)), caCertificate);
+        users[msg.sender] = User(userCount++, firstName, lastName, email, password, caCertificate);
         email_to_user[email] = msg.sender;
         return true;
     }
@@ -76,7 +76,16 @@ contract Praxisprojekt {
   ///@param password Login password
   ///@return true, if md5 hashes of usernames/emails and sha256 hashes of passwords match
   function authenticate(string memory user, string memory password) public view returns(bool) {
-  	return streql(user, users[msg.sender].email) && sha256(abi.encode(password)) == users[msg.sender].password;
+  	//return streql(user, users[msg.sender].email) && password == users[msg.sender].password;
+  	if (keccak256(abi.encodePacked(user)) == keccak256(abi.encodePacked(users[msg.sender].email))) {
+  	    if (keccak256(abi.encodePacked(password)) == keccak256(abi.encodePacked(users[msg.sender].password))) {
+  	        return true;
+  	    }else{
+  	        return false;
+  	    }
+  	}else{
+  	    return false;
+  	}
   }
 
   ///@return the first name of the User mapped to this address
@@ -95,7 +104,7 @@ contract Praxisprojekt {
   }
 
   ///@return the hashed password of the User mapped to this address
-  function getUserPassword() public view returns (bytes32) {
+  function getUserPassword() public view returns (string memory) {
     return users[msg.sender].password;
   }
 
@@ -119,8 +128,9 @@ contract Praxisprojekt {
   ///@param link The link to where the file is actually stored
   ///@param signature The Object's/Document's signature
   ///@return true, if successfully created; false if there's already an Object with the same description in this user's array
-  function createObject(string memory description, string memory link, bytes32 signature) public returns(bool) {
-    if(streql(getObjectLink(description), "")) {
+  function createObject(string memory description, string memory link, string signature) public returns(bool) {
+    //if(streql(getObjectLink(description), "")) {
+    if(keccak256(abi.encodePacked(description)) != keccak256("")){
       objects[msg.sender].push(Object(objectCount++, description, signature, now, link));
       return true;
     }
